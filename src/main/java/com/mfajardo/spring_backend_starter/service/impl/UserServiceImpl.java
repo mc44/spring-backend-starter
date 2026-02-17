@@ -2,14 +2,13 @@ package com.mfajardo.spring_backend_starter.service.impl;
 
 import com.mfajardo.spring_backend_starter.dto.UserDto;
 import com.mfajardo.spring_backend_starter.entity.User;
+import com.mfajardo.spring_backend_starter.exception.EntityNotFoundException;
 import com.mfajardo.spring_backend_starter.exception.ForbiddenOperationException;
 import com.mfajardo.spring_backend_starter.repository.UserInfoRepository;
 import com.mfajardo.spring_backend_starter.service.UserDetailsServiceImpl;
 import com.mfajardo.spring_backend_starter.service.UserService;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -52,7 +51,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void delete(UUID userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         boolean isAdmin = user.getRoles().stream()
                 .anyMatch(role -> role.getName().equals("ADMIN"));

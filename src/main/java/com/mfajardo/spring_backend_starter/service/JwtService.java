@@ -1,7 +1,9 @@
 package com.mfajardo.spring_backend_starter.service;
 
 import com.mfajardo.spring_backend_starter.entity.User;
+import com.mfajardo.spring_backend_starter.exception.InvalidTokenException;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -63,28 +65,50 @@ public class JwtService {
     /* ===================== CLAIMS ===================== */
 
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        try {
+            return extractClaim(token, Claims::getSubject);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new InvalidTokenException();
+        }
     }
 
     public String extractTokenId(String token) {
-        return extractClaim(token, claims -> claims.get("jti", String.class));
+        try {
+            return extractClaim(token, claims -> claims.get("jti", String.class));
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new InvalidTokenException();
+        }
     }
 
     public Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
+        try {
+            return extractClaim(token, Claims::getExpiration);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new InvalidTokenException();
+        }
     }
 
+
     public <T> T extractClaim(String token, Function<Claims, T> resolver) {
-        return resolver.apply(extractAllClaims(token));
+        try {
+            return resolver.apply(extractAllClaims(token));
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new InvalidTokenException();
+        }
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSignKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(getSignKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new InvalidTokenException();
+        }
     }
+
 
     /* ===================== UTIL ===================== */
 

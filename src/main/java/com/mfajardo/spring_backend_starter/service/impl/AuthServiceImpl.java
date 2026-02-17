@@ -2,16 +2,19 @@ package com.mfajardo.spring_backend_starter.service.impl;
 
 import com.mfajardo.spring_backend_starter.dto.LoginDto;
 import com.mfajardo.spring_backend_starter.entity.User;
+import com.mfajardo.spring_backend_starter.exception.AppException;
+import com.mfajardo.spring_backend_starter.exception.InvalidTokenException;
 import com.mfajardo.spring_backend_starter.repository.UserInfoRepository;
 import com.mfajardo.spring_backend_starter.service.AuthService;
 import com.mfajardo.spring_backend_starter.service.AuthSessionStore;
 import com.mfajardo.spring_backend_starter.service.JwtService;
+import io.jsonwebtoken.JwtException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.BadRequestException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +23,7 @@ import java.util.Map;
 
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
@@ -29,62 +33,46 @@ public class AuthServiceImpl implements AuthService {
     private final AuthSessionStore sessionStore;
 
     @Override
-    public User loginUser(LoginDto loginDto) throws BadRequestException {
+    @Transactional
+    public User loginUser(LoginDto loginDto){
 
-        if (loginDto.getPassword() == null || loginDto.getPassword().isBlank()) {
-            throw new BadRequestException("Password must not be empty");
-        }
+        authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(
+                    loginDto.getUsername(),
+                    loginDto.getPassword()
+            )
+        );
 
-        try {
-            Authentication authentication =
-                    authenticationManager.authenticate(
-                            new UsernamePasswordAuthenticationToken(
-                                    loginDto.getUsername(),
-                                    loginDto.getPassword()
-                            )
-                    );
-            if (authentication.isAuthenticated()) {
-                return userInfoRepository.findByUsername(loginDto.getUsername()).orElse(null);
-            }else{
-                throw new BadRequestException("Password is incorrect");
-            }
-
-        } catch (BadCredentialsException e) {
-            throw new BadCredentialsException("Invalid username or password");
-        }
+        return userInfoRepository.findByUsername(loginDto.getUsername())
+                .orElseThrow(() -> {
+                    log.error("CRITICAL: Authenticated user '{}' not found in DB", loginDto.getUsername());
+                    return new AppException("Authentication state invalid", HttpStatus.INTERNAL_SERVER_ERROR) {};
+                });
     }
 
-
-    @Override
     public User loadUserFromRefreshToken(String refreshToken) {
-        String username = jwtService.extractUsername(refreshToken);
-        return userInfoRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        try {
+            String username = jwtService.extractUsername(refreshToken);
+
+            return userInfoRepository.findByUsername(username)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new InvalidTokenException();
+        }
     }
 
-    public Map<String, String> refreshTokens(
-            String refreshToken,
-            User user
-    ) {
-        if (jwtService.isTokenExpired(refreshToken)) {
-            throw new RuntimeException("Refresh token expired");
-        }
+    public Map<String, String> refreshTokens(String refreshToken, User user) {
 
-        if (!jwtService.isRefreshToken(refreshToken)) {
-            throw new RuntimeException("Invalid refresh token");
-        }
-
-        String username = jwtService.extractUsername(refreshToken);
-        if (!username.equals(user.getUsername())) {
-            throw new RuntimeException("Refresh token user mismatch");
-        }
-
+        // invalidate old session
         sessionStore.invalidateSession(refreshToken);
 
+        // generate new tokens
         String newAccessToken = jwtService.generateAccessToken(user);
         String newRefreshToken = jwtService.generateRefreshToken(user);
         String newId = jwtService.extractTokenId(newRefreshToken);
 
+        // store new session
         sessionStore.createSession(
                 newId,
                 user.getId().toString(),
@@ -97,4 +85,5 @@ public class AuthServiceImpl implements AuthService {
 
         return tokens;
     }
+
 }

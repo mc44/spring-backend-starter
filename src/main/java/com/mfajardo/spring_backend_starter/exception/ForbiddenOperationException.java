@@ -1,9 +1,10 @@
 package com.mfajardo.spring_backend_starter.exception;
 
 
-public class ForbiddenOperationException extends RuntimeException {
+import org.springframework.http.HttpStatus;
 
+public class ForbiddenOperationException extends AppException {
     public ForbiddenOperationException(String message) {
-        super(message);
+        super(message, HttpStatus.FORBIDDEN);
     }
 }

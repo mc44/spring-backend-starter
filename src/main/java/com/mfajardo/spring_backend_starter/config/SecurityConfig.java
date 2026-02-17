@@ -1,6 +1,7 @@
 package com.mfajardo.spring_backend_starter.config;
 
 
+import com.mfajardo.spring_backend_starter.exception.RestAuthenticationEntryPoint;
 import com.mfajardo.spring_backend_starter.filter.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -27,8 +28,9 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
 
-    private static final String[] WHITE_LIST_URL = {
+    public static final String[] WHITE_LIST_URL = {
             "/api/v1/auth/*"
     };
 
@@ -39,6 +41,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(WHITE_LIST_URL).permitAll()
                         .anyRequest().authenticated())
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
