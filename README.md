@@ -1,6 +1,6 @@
 # Spring Backend Starter
 
-A production-oriented **Spring Boot 3** backend template with JWT authentication, role-based access control (RBAC), Redis-backed refresh tokens, and MySQL + Flyway. Use it as a clone-and-go base for APIs or microservices.
+A production-oriented **Spring Boot 3** backend template with JWT authentication, role-based access control (RBAC), Redis-backed refresh tokens, and MySQL + Flyway. Use it as a clone-and-go base for APIs.
 
 ---
 
