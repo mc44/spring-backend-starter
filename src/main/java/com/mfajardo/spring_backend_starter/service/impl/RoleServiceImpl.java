@@ -39,8 +39,7 @@ public class RoleServiceImpl implements RoleService {
             throw new IllegalArgumentException("Role already exists");
         }
 
-        Role role = new Role();
-        role.setName(name);
+        Role role = Role.builder().name(name).build();
 
         return roleRepository.save(role);
     }

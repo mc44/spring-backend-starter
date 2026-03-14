@@ -9,6 +9,9 @@ import java.util.Set;
 @Entity
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class Role extends BaseEntity{
 
