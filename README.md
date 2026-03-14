@@ -13,7 +13,7 @@ A production-oriented **Spring Boot 3** backend template with JWT authentication
 | **Roles & Authorities** | Roles (e.g. ADMIN, USER), granular authorities (USER_CREATE, ROLE_ASSIGN, etc.), assign/remove authorities to roles |
 | **Data** | MySQL 8, JPA/Hibernate, Flyway migrations, optional Spring Data REST |
 | **Infra** | Spring Security (stateless), BCrypt passwords, Spring Cache, Kafka on classpath (ready for event-driven modules), global REST exception handling with structured error responses (including `traceId`) |
-
+| **Testing** | Focused tests for auth flow (`AuthControllerTest` with MockMvc), domain rules (`RoleServiceTest`), repository layer (`RoleRepositoryTest` with H2), service logic via Mockito (`RoleServiceMockTest`), plus a `PasswordEncoderTest` for generating BCrypt hashes for seeded users |
 ---
 
 ## Tech stack
@@ -160,3 +160,16 @@ src/main/java/.../spring_backend_starter/
 ---
 
 
+## Testing
+
+This starter includes a small but representative test suite:
+
+- **AuthControllerTest** (`@WebMvcTest` + `MockMvc`): covers login success, invalid credentials, validation errors, refresh token flow, and logout behavior, with security filter mocked out.
+- **RoleServiceTest** (`@SpringBootTest`): verifies domain rules such as preventing deletion of the `ADMIN` system role (throws `ForbiddenOperationException`).
+- **RoleRepositoryTest** (`@DataJpaTest` + embedded H2): tests basic persistence and queries for `Role`.
+- **RoleServiceMockTest** (Mockito + JUnit 5): unit tests for assigning authorities, including not-found scenarios (`EntityNotFoundException`).
+- **PasswordEncoderTest**: utility test to generate BCrypt password hashes for seeded users.
+
+Run all tests with:
+
+./mvnw test
